@@ -28,6 +28,19 @@ export const ContactForm: React.FC = () => {
       return;
     }
     setErrorMsg('');
+
+    const subject = encodeURIComponent(`[Contato Landing Page] ${formData.interesse} - ${formData.nome}`);
+    const body = encodeURIComponent(
+      `Novo contato recebido via Landing Page SDTech Soluctions:\n\n` +
+      `Nome: ${formData.nome}\n` +
+      `Empresa: ${formData.empresa || 'Não informada'}\n` +
+      `E-mail: ${formData.email}\n` +
+      `WhatsApp: ${formData.whatsapp}\n` +
+      `Interesse: ${formData.interesse}\n\n` +
+      `Mensagem / Detalhes:\n${formData.mensagem || 'Nenhuma mensagem adicional.'}`
+    );
+
+    window.location.href = `mailto:sdtech.tec@gmail.com?subject=${subject}&body=${body}`;
     setSubmitted(true);
   };
 
