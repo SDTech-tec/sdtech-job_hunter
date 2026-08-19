@@ -1,5 +1,4 @@
 import React from 'react';
-import { Cpu } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -11,8 +10,8 @@ export const Footer: React.FC = () => {
           {/* Logo & Slogan */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white">
-                <Cpu className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-lg bg-slate-900/90 border border-slate-700/80 p-0.5 flex items-center justify-center overflow-hidden">
+                <img src="/assets/sdtech-logo.png" alt="SDTECH Logo" className="w-full h-full object-contain" />
               </div>
               <span className="text-lg font-extrabold text-white tracking-tight">SDTECH</span>
             </div>
