@@ -5,6 +5,13 @@
 .env.staging
 *.env
 
+# Chaves e certificados
+*.key
+*.pem
+*.crt
+*.pfx
+*.asc
+
 # Backups
 backups/
 *.dump
