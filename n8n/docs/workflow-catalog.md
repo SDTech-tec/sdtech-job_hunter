@@ -10,3 +10,4 @@
 | `SDTECH — CORE — Conversation Resolver` | `v1.0.0` | Localiza conversa aberta por `tenant_id`, `contact_id` e `channel_id` | Manual / Sub-workflow | `conversations` |
 | `SDTECH — CORE — Message Test` | `v1.0.0` | Grava mensagem de teste parametrizada em `messages` | Manual / Sub-workflow | `messages` |
 | `SDTECH — CORE — Audit Test` | `v1.0.0` | Grava registro de auditoria parametrizado em `audit_logs` | Manual / Sub-workflow | `audit_logs` |
+| `SDTECH — CORE — Evolution Webhook Test` | `v1.0.0` | Recebe e normaliza payload da Evolution API sem gravar banco | Webhook / Manual | Nenhuma (Normalização em memória) |

@@ -1,0 +1,91 @@
+{
+  "name": "SDTECH — CORE — Evolution Webhook Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evolution-test",
+        "options": {}
+      },
+      "id": "70000000-0000-0000-0000-000000000001",
+      "name": "Webhook Evolution Test",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "evolution-test"
+    },
+    {
+      "parameters": {},
+      "id": "70000000-0000-0000-0000-000000000002",
+      "name": "Ao Clicar em Executar (Manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\n\n// Payload de teste fictício ou payload real recebido da Evolution API\nconst body = inputData.body || inputData;\n\nconst eventName = body.event || body.event_name || 'messages.upsert';\nconst instance = body.instance || body.instance_name || 'teste_instance';\nconst dataObj = body.data || body.payload || body;\n\n// Extração normalizada de contato e mensagem\nconst remoteJid = (dataObj.key && dataObj.key.remoteJid) || (dataObj.sender) || '5511999999999@s.whatsapp.net';\nconst cleanPhone = remoteJid.replace(/@.*$/, '').replace(/[^0-9]/g, '');\nconst formattedPhone = cleanPhone ? '+' + cleanPhone : '+5511999999999';\n\nconst messageId = (dataObj.key && dataObj.key.id) || dataObj.id || 'TEST_MSG_' + Date.now();\nconst textContent = (dataObj.message && (dataObj.message.conversation || dataObj.message.extendedTextMessage?.text)) || dataObj.content || 'Mensagem de teste controlada Evolution API';\nconst pushName = dataObj.pushName || dataObj.sender_name || null;\n\n// Contrato de Normalização Interna SDTech Soluctions\nconst normalizedEvent = {\n  source: \"evolution_api\",\n  event: eventName,\n  instance: instance,\n  received_at: new Date().toISOString(),\n  tenant_id: null, // Resolvido posteriormente via tabela channels\n  contact: {\n    phone: formattedPhone,\n    name: pushName\n  },\n  message: {\n    id: messageId,\n    type: \"text\",\n    direction: \"inbound\",\n    text: textContent,\n    timestamp: new Date().toISOString()\n  },\n  raw_event: body\n};\n\nreturn [{\n  json: {\n    status: \"success\",\n    code: \"EVOLUTION_TEST_PROCESSED\",\n    message: \"Webhook da Evolution API recebido e normalizado com sucesso (sem alteração no banco ou IA)\",\n    normalized_event: normalizedEvent,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "70000000-0000-0000-0000-000000000003",
+      "name": "Normalizar Payload Evolution API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 380]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "70000000-0000-0000-0000-000000000004",
+      "name": "Responder ao Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [780, 380]
+    }
+  ],
+  "connections": {
+    "Webhook Evolution Test": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Payload Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ao Clicar em Executar (Manual)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Payload Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Payload Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Responder ao Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "sdtech-core-evolution-webhook-test",
+    "version": "1.0.0",
+    "description": "Recebe payload de teste da Evolution API, normaliza para o contrato interno SDTech e retorna confirmação sem gravar banco ou responder WhatsApp"
+  }
+}
