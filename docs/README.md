@@ -8,6 +8,7 @@ Bem-vindo à central de documentação técnica do **SDTech Soluctions**, a plat
 
 - [**Contexto Geral do Projeto**](../PROJECT_CONTEXT.md)
 - [**Arquitetura de Alto Nível**](architecture/overview.md)
+- [**Agente Interno SDTech Support AI**](architecture/sdtech-support-ai.md)
 - [**Banco de Dados Core V1.0**](database/README.md)
 - [**Modelo Lógico e Diagrama ER**](database/schema.md)
 - [**Guias de Deployment e Infraestrutura**](deployment/overview.md)

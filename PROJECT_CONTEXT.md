@@ -36,6 +36,12 @@
 - **Agente de Agendamento Clinico / Estética**
 - **Outros Agentes Especializados por nicho de mercado**
 
+### Agente Interno de Suporte da Plataforma (Escopo PLATFORM)
+- **SDTech Support AI:** Agente interno responsável pelo suporte do próprio SDTech Soluctions.
+  - **Escopo (`agent_scope`):** `PLATFORM`
+  - **Regime Inicial:** Aprendizagem supervisionada durante os primeiros 90 dias (baseada em dúvidas, tickets, conversas, resoluções, feedback humano e documentação oficial).
+  - **Governança de Documentos:** Fluxo obrigatório `RASCUNHO → EM REVISÃO → APROVADO → PUBLICADO → ARQUIVADO`. Bloqueado para publicação ou alteração direta de documentação crítica sem aprovação autorizada.
+
 ---
 
 ## 🏗️ Infraestrutura Prevista
