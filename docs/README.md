@@ -8,6 +8,7 @@ Bem-vindo à central de documentação técnica do **SDTech Soluctions**, a plat
 
 - [**Contexto Geral do Projeto**](../PROJECT_CONTEXT.md)
 - [**Arquitetura de Alto Nível**](architecture/overview.md)
+- [**Landing Page Institucional e Comercial**](architecture/landing-page.md)
 - [**Arquitetura do n8n Core**](architecture/n8n-core.md)
 - [**Fluxo de Entrada Real WhatsApp Inbound**](architecture/whatsapp-inbound.md)
 - [**Contrato do Webhook (Evolution API → n8n)**](architecture/evolution-webhook.md)

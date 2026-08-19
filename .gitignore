@@ -12,6 +12,12 @@
 *.pfx
 *.asc
 
+# Dependencies & Build Outputs
+node_modules/
+dist/
+build/
+.output/
+
 # Backups
 backups/
 *.dump
