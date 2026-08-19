@@ -9,10 +9,13 @@ Bem-vindo à central de documentação técnica do **SDTech Soluctions**, a plat
 - [**Contexto Geral do Projeto**](../PROJECT_CONTEXT.md)
 - [**Arquitetura de Alto Nível**](architecture/overview.md)
 - [**Arquitetura do n8n Core**](architecture/n8n-core.md)
+- [**Fluxo de Entrada Real WhatsApp Inbound**](architecture/whatsapp-inbound.md)
 - [**Contrato do Webhook (Evolution API → n8n)**](architecture/evolution-webhook.md)
 - [**Resolução de Instância e Multi-Tenancy**](architecture/evolution-instance-resolution.md)
+- [**Roadmap da API REST em Go**](architecture/api-go-roadmap.md)
 - [**Documentação & Workflows n8n**](../n8n/README.md)
 - [**Documentação & Módulo Evolution API**](../evolution/README.md)
+- [**Suíte de Testes WhatsApp Inbound**](testing/whatsapp-inbound.md)
 - [**Agente Interno SDTech Support AI**](architecture/sdtech-support-ai.md)
 - [**Banco de Dados Core V1.0**](database/README.md)
 - [**Modelo Lógico e Diagrama ER**](database/schema.md)
@@ -20,6 +23,7 @@ Bem-vindo à central de documentação técnica do **SDTech Soluctions**, a plat
 - [**Registros de Decisões Arquiteturais (ADRs)**](decisions/)
   - [ADR-0001: Arquitetura Modular e Habilitação de Módulos](decisions/ADR-0001-modular-architecture.md)
   - [ADR-0002: Integração com Evolution API, Normalização de Eventos e Webhooks](decisions/ADR-0002-evolution-api-webhook.md)
+  - [ADR-0003: Fluxo Real de Entrada WhatsApp Sem Resposta Automática de IA](decisions/ADR-0003-whatsapp-inbound.md)
 
 ---
 

@@ -12,7 +12,7 @@ sequenceDiagram
     participant DB as PostgreSQL (sdtech_soluctions)
 
     W->>E: Mensagem Inbound
-    E->>N: Webhook HTTP POST (/webhook/evolution-test ou /webhook/inbound)
+    E->>N: Webhook HTTP POST (/webhook/sdtech-whatsapp-inbound)
     N->>N: Normaliza Evento (Contrato Interno SDTech)
     N->>DB: Resolve Instância → Tenant → Contato → Conversa
     N->>DB: Grava Mensagem & Registra em Audit

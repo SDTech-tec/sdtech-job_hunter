@@ -1,0 +1,381 @@
+{
+  "name": "SDTECH — WHATSAPP — Inbound Message",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sdtech-whatsapp-inbound",
+        "options": {}
+      },
+      "id": "80000000-0000-0000-0000-000000000001",
+      "name": "Webhook Inbound WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [150, 300],
+      "webhookId": "sdtech-whatsapp-inbound"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst eventName = body.event || body.event_name || 'messages.upsert';\nconst instance = body.instance || body.instance_name;\nconst dataObj = body.data || body.payload || body;\n\n// Filtro de evento\nif (eventName !== 'messages.upsert' && eventName !== 'MESSAGES_UPSERT') {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"IGNORED_EVENT\",\n      status: \"ignored\",\n      message: `Evento '${eventName}' ignorado`,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// Filtro de mensagens próprias (fromMe = true)\nconst key = dataObj.key || {};\nif (key.fromMe === true) {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"OUTBOUND_SELF_MESSAGE\",\n      status: \"ignored\",\n      message: \"Mensagem enviada pela própria empresa ignorada no fluxo inbound\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// Validação de campos obrigatórios\nconst remoteJid = key.remoteJid || dataObj.sender;\nconst messageId = key.id || dataObj.id;\n\nif (!instance || !remoteJid || !messageId) {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"VALIDATION_ERROR\",\n      status: \"validation_error\",\n      message: \"Campos obrigatórios ausentes: instance, remoteJid ou message_id\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nconst cleanPhone = remoteJid.replace(/@.*$/, '').replace(/[^0-9]/g, '');\nconst formattedPhone = cleanPhone ? '+' + cleanPhone : null;\n\nif (!formattedPhone) {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"VALIDATION_ERROR\",\n      status: \"validation_error\",\n      message: \"Número de telefone do contato inválido\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nconst messageType = dataObj.messageType || 'text';\nconst textContent = (dataObj.message && (dataObj.message.conversation || dataObj.message.extendedTextMessage?.text)) || dataObj.content || '';\nconst pushName = dataObj.pushName || dataObj.sender_name || null;\n\nreturn [{\n  json: {\n    is_valid: true,\n    instance: String(instance).trim(),\n    external_message_id: String(messageId).trim(),\n    phone: formattedPhone,\n    push_name: pushName,\n    message_type: messageType,\n    content: textContent,\n    raw_event: JSON.stringify({ instance, event: eventName, messageId })\n  }\n}];"
+      },
+      "id": "80000000-0000-0000-0000-000000000002",
+      "name": "1. Validar e Filtrar Inbound",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "80000000-0000-0000-0000-000000000003",
+      "name": "Payload Válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.id AS channel_id, c.tenant_id, c.name AS channel_name, t.name AS tenant_name FROM channels c JOIN tenants t ON t.id = c.tenant_id WHERE c.type = 'whatsapp' AND c.status = 'active' AND t.status = 'active' AND c.config->>'instance_name' = $1::text LIMIT 1;",
+        "queryParams": "={{ $json.instance }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000004",
+      "name": "2. Resolver Instance -> Channel -> Tenant",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [820, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst first = items[0];\nconst prevData = $('1. Validar e Filtrar Inbound').first().json;\n\nif (first.error || items.length === 0 || !first.json || !first.json.tenant_id) {\n  return [{\n    json: {\n      resolved: false,\n      status: \"tenant_not_resolved\",\n      code: \"TENANT_NOT_RESOLVED\",\n      message: `Nenhum tenant/canal ativo associado à instância '${prevData.instance}'`,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    resolved: true,\n    tenant_id: first.json.tenant_id,\n    channel_id: first.json.channel_id,\n    phone: prevData.phone,\n    push_name: prevData.push_name,\n    external_message_id: prevData.external_message_id,\n    message_type: prevData.message_type,\n    content: prevData.content,\n    raw_event: prevData.raw_event\n  }\n}];"
+      },
+      "id": "80000000-0000-0000-0000-000000000005",
+      "name": "3. Checar Tenant Resolvido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.resolved }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "80000000-0000-0000-0000-000000000006",
+      "name": "Tenant Resolvido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1260, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH sel AS (SELECT id AS contact_id, name FROM contacts WHERE tenant_id = $1::uuid AND phone = $2::text), ins AS (INSERT INTO contacts (tenant_id, name, phone, status) SELECT $1::uuid, COALESCE($3::text, 'Contato WhatsApp'), $2::text, 'active' WHERE NOT EXISTS (SELECT 1 FROM sel) RETURNING id AS contact_id, name) SELECT contact_id, name FROM sel UNION ALL SELECT contact_id, name FROM ins LIMIT 1;",
+        "queryParams": "={{ $json.tenant_id }},{{ $json.phone }},{{ $json.push_name }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000007",
+      "name": "4. Resolver / Criar Contact",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1480, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH sel AS (SELECT id AS conversation_id, status FROM conversations WHERE tenant_id = $1::uuid AND contact_id = $2::uuid AND channel_id = $3::uuid AND status IN ('open', 'pending') ORDER BY created_at DESC LIMIT 1), ins AS (INSERT INTO conversations (tenant_id, contact_id, channel_id, status, ai_enabled, priority) SELECT $1::uuid, $2::uuid, $3::uuid, 'open', true, 'normal' WHERE NOT EXISTS (SELECT 1 FROM sel) RETURNING id AS conversation_id, status) SELECT conversation_id, status FROM sel UNION ALL SELECT conversation_id, status FROM ins LIMIT 1;",
+        "queryParams": "={{ $('3. Checar Tenant Resolvido').first().json.tenant_id }},{{ $json.contact_id }},{{ $('3. Checar Tenant Resolvido').first().json.channel_id }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000008",
+      "name": "5. Resolver / Criar Conversation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1700, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS existing_message_id FROM messages WHERE conversation_id = $1::uuid AND external_message_id = $2::text LIMIT 1;",
+        "queryParams": "={{ $json.conversation_id }},{{ $('3. Checar Tenant Resolvido').first().json.external_message_id }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000009",
+      "name": "6. Checar Idempotência (Duplicidade)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1920, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Boolean($json.existing_message_id) }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "80000000-0000-0000-0000-000000000010",
+      "name": "Mensagem Duplicada?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2140, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (tenant_id, conversation_id, sender_type, sender_id, message_type, content, external_message_id, metadata) VALUES ($1::uuid, $2::uuid, 'contact', $3::uuid, $4::text, $5::text, $6::text, $7::jsonb) RETURNING id AS message_id, created_at;",
+        "queryParams": "={{ $('3. Checar Tenant Resolvido').first().json.tenant_id }},{{ $('5. Resolver / Criar Conversation').first().json.conversation_id }},{{ $('4. Resolver / Criar Contact').first().json.contact_id }},{{ $('3. Checar Tenant Resolvido').first().json.message_type }},{{ $('3. Checar Tenant Resolvido').first().json.content }},{{ $('3. Checar Tenant Resolvido').first().json.external_message_id }},{{ $('3. Checar Tenant Resolvido').first().json.raw_event }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000011",
+      "name": "7. Persistir Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2360, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE conversations SET last_message_at = now() WHERE id = $1::uuid AND tenant_id = $2::uuid; INSERT INTO audit_logs (tenant_id, actor_type, actor_id, action, entity_type, entity_id, metadata) VALUES ($2::uuid, 'system', NULL, 'WHATSAPP_MESSAGE_RECEIVED', 'messages', $3::uuid, '{\"channel\": \"whatsapp\", \"direction\": \"inbound\"}'::jsonb);",
+        "queryParams": "={{ $('5. Resolver / Criar Conversation').first().json.conversation_id }},{{ $('3. Checar Tenant Resolvido').first().json.tenant_id }},{{ $json.message_id }}"
+      },
+      "id": "80000000-0000-0000-0000-000000000012",
+      "name": "8. Update Conversation & Audit Log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2580, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tenantId = $('3. Checar Tenant Resolvido').first().json.tenant_id;\nconst channelId = $('3. Checar Tenant Resolvido').first().json.channel_id;\nconst contactId = $('4. Resolver / Criar Contact').first().json.contact_id;\nconst conversationId = $('5. Resolver / Criar Conversation').first().json.conversation_id;\nconst messageId = $('7. Persistir Message').first().json.message_id;\nconst content = $('3. Checar Tenant Resolvido').first().json.content;\nconst messageType = $('3. Checar Tenant Resolvido').first().json.message_type;\n\n// Contexto Estruturado para o Supervisor IA (Fase Futura)\nconst aiContext = {\n  tenant_id: tenantId,\n  channel_id: channelId,\n  contact_id: contactId,\n  conversation_id: conversationId,\n  message_id: messageId,\n  message_type: messageType,\n  message_text: content,\n  direction: \"inbound\"\n};\n\nreturn [{\n  json: {\n    success: true,\n    status: \"processed\",\n    code: \"MESSAGE_PROCESSED\",\n    message: \"Mensagem inbound processada e gravada no PostgreSQL\",\n    ai_context: aiContext,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "80000000-0000-0000-0000-000000000013",
+      "name": "9. Preparar Contexto IA & Resposta OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2800, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "80000000-0000-0000-0000-000000000014",
+      "name": "10. Responder HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3020, 200]
+    }
+  ],
+  "connections": {
+    "Webhook Inbound WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "1. Validar e Filtrar Inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validar e Filtrar Inbound": {
+      "main": [
+        [
+          {
+            "node": "Payload Válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Válido?": {
+      "main": [
+        [
+          {
+            "node": "2. Resolver Instance -> Channel -> Tenant",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "2. Resolver Instance -> Channel -> Tenant": {
+      "main": [
+        [
+          {
+            "node": "3. Checar Tenant Resolvido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Checar Tenant Resolvido": {
+      "main": [
+        [
+          {
+            "node": "Tenant Resolvido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant Resolvido?": {
+      "main": [
+        [
+          {
+            "node": "4. Resolver / Criar Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "4. Resolver / Criar Contact": {
+      "main": [
+        [
+          {
+            "node": "5. Resolver / Criar Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Resolver / Criar Conversation": {
+      "main": [
+        [
+          {
+            "node": "6. Checar Idempotência (Duplicidade)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Checar Idempotência (Duplicidade)": {
+      "main": [
+        [
+          {
+            "node": "Mensagem Duplicada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Duplicada?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "7. Persistir Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Persistir Message": {
+      "main": [
+        [
+          {
+            "node": "8. Update Conversation & Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Update Conversation & Audit Log": {
+      "main": [
+        [
+          {
+            "node": "9. Preparar Contexto IA & Resposta OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Preparar Contexto IA & Resposta OK": {
+      "main": [
+        [
+          {
+            "node": "10. Responder HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "sdtech-whatsapp-inbound-v1",
+    "version": "1.0.0",
+    "description": "Fluxo real de entrada do WhatsApp com validação, resolução de tenant/canal, contato, conversa, mensagens, deduplicação e audit log"
+  }
+}

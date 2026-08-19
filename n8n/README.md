@@ -36,6 +36,7 @@ Todos os workflows seguem o padrão de nomenclatura `SDTECH — CORE — <Nome>`
 | `SDTECH — CORE — Conversation Resolver` | `workflows/004_conversation_resolver.json` | `v1.0.0` | Busca conversa aberta por `tenant_id`, `contact_id`, `channel_id` |
 | `SDTECH — CORE — Message Test` | `workflows/005_message_test.json` | `v1.0.0` | Grava mensagem de teste isolada por `tenant_id` em `messages` |
 | `SDTECH — CORE — Audit Test` | `workflows/006_audit_test.json` | `v1.0.0` | Grava log de auditoria parametrizado em `audit_logs` |
+| `SDTECH — WHATSAPP — Inbound Message` | `workflows/008_whatsapp_inbound.json` | `v1.0.0` | Fluxo real de ingestão e persistência de mensagens WhatsApp |
 
 ---
 

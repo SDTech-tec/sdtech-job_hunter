@@ -30,12 +30,12 @@ for wf in "$WORKFLOWS_DIR"/*.json; do
         continue
     fi
 
-    # Check 2: Verificação do nome padronizado "SDTECH — CORE —"
+    # Check 2: Verificação do nome padronizado "SDTECH — CORE —" ou "SDTECH — WHATSAPP —"
     wf_name=$(python3 -c "import json; print(json.load(open('$wf')).get('name', ''))")
-    if [[ "$wf_name" == SDTECH\ —\ CORE\ —* ]]; then
+    if [[ "$wf_name" == SDTECH\ —\ CORE\ —* ]] || [[ "$wf_name" == SDTECH\ —\ WHATSAPP\ —* ]]; then
         echo "   ✅ Nomenclatura válida: '$wf_name'"
     else
-        echo "   ❌ Nome inválido: '$wf_name' (deve iniciar com 'SDTECH — CORE —')"
+        echo "   ❌ Nome inválido: '$wf_name' (deve iniciar com 'SDTECH — CORE —' ou 'SDTECH — WHATSAPP —')"
         ((FAIL++)) || true
     fi
 

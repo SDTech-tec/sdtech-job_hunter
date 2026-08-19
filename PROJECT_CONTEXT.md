@@ -117,3 +117,14 @@ Toda e qualquer informação operacional deve possuir **isolamento rigoroso por 
 - Proibido o uso do superusuário `postgres` em aplicações.
 - Nenhuma chave de API, secret ou token em texto puro commitado no Git.
 - Uso obrigatorio de `.env` e variáveis de ambiente em todos os microsserviços.
+
+---
+
+## 📖 Regra de Documentação por Versão
+
+A partir do lançamento de cada marco/versão do SDTech Soluctions, cada entrega deverá conter documentação suficiente para suportar:
+- **Suporte Técnico:** Diagnóstico rápido de falhas e guia de logs.
+- **Treinamento e Onboarding:** Manuais operacionais e fluxogramas de processos.
+- **Implantação / Deployment:** Scripts de migration, variáveis de ambiente e requisitos de infraestrutura.
+- **Troubleshooting:** Mapeamento de códigos de erro, tratamentos e resoluções conhecidas.
+- **Comercialização:** Descrição de escopo de módulos e capacidades disponíveis por versão.
