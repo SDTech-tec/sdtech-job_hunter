@@ -1,0 +1,124 @@
+{
+  "name": "SDTECH — CORE — Tenant Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "20000000-0000-0000-0000-000000000001",
+      "name": "Ao Clicar em Executar",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nconst tenantId = inputData.tenant_id;\n\n// Validação de UUID\nconst uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nif (!tenantId || typeof tenantId !== 'string' || !uuidRegex.test(tenantId.trim())) {\n  return [{\n    json: {\n      is_valid: false,\n      status: \"validation_error\",\n      code: \"INVALID_TENANT_ID\",\n      message: \"O parâmetro 'tenant_id' é obrigatório e deve ser um UUID válido (ex: 'aaaaaaaa-0000-0000-0000-000000000001')\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    tenant_id: tenantId.trim()\n  }\n}];"
+      },
+      "id": "20000000-0000-0000-0000-000000000002",
+      "name": "Validar Input (tenant_id)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "20000000-0000-0000-0000-000000000003",
+      "name": "Input Válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS tenant_id, tenant_code, name, legal_name, status, timezone, created_at FROM tenants WHERE id = $1::uuid;",
+        "queryParams": "={{ $json.tenant_id }}"
+      },
+      "id": "20000000-0000-0000-0000-000000000004",
+      "name": "Consultar Tenant (PostgreSQL)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [880, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst first = items[0];\n\nif (first.error) {\n  return [{\n    json: {\n      status: \"error\",\n      code: \"DB_QUERY_ERROR\",\n      message: \"Erro ao consultar tenant no PostgreSQL\",\n      error_details: first.error.message || \"Erro desconhecido\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nif (items.length === 0 || !first.json || !first.json.tenant_id) {\n  return [{\n    json: {\n      status: \"error\",\n      code: \"TENANT_NOT_FOUND\",\n      message: \"Tenant não encontrado no banco de dados sdtech_soluctions\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nconst tenant = first.json;\nreturn [{\n  json: {\n    status: \"success\",\n    code: \"TENANT_FOUND\",\n    message: \"Tenant localizado com sucesso\",\n    data: {\n      tenant_id: tenant.tenant_id,\n      tenant_code: tenant.tenant_code || null,\n      name: tenant.name,\n      legal_name: tenant.legal_name || null,\n      status: tenant.status,\n      timezone: tenant.timezone,\n      created_at: tenant.created_at\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "20000000-0000-0000-0000-000000000005",
+      "name": "Formatar Resultado Tenant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    }
+  ],
+  "connections": {
+    "Ao Clicar em Executar": {
+      "main": [
+        [
+          {
+            "node": "Validar Input (tenant_id)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Input (tenant_id)": {
+      "main": [
+        [
+          {
+            "node": "Input Válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Válido?": {
+      "main": [
+        [
+          {
+            "node": "Consultar Tenant (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Consultar Tenant (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resultado Tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "sdtech-core-tenant-test",
+    "version": "1.0.0",
+    "description": "Valida acesso parametrizado ao Tenant filtrado por tenant_id"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "name": "SDTECH — CORE — Audit Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "60000000-0000-0000-0000-000000000001",
+      "name": "Ao Clicar em Executar",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nconst tenantId = inputData.tenant_id;\nconst actorType = inputData.actor_type || 'system';\nconst actorId = inputData.actor_id || null;\nconst action = inputData.action || 'core.audit_test';\nconst entityType = inputData.entity_type || 'system_test';\nconst entityId = inputData.entity_id || null;\nconst metadata = inputData.metadata || { is_test: true, triggered_by: 'n8n_core_test' };\n\nconst uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst validActors = ['user', 'agent', 'system'];\n\nif (tenantId && !uuidRegex.test(String(tenantId).trim())) {\n  return [{\n    json: {\n      is_valid: false,\n      status: \"validation_error\",\n      code: \"INVALID_TENANT_ID\",\n      message: \"O parâmetro 'tenant_id', se fornecido, deve ser um UUID válido\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nif (!validActors.includes(actorType)) {\n  return [{\n    json: {\n      is_valid: false,\n      status: \"validation_error\",\n      code: \"INVALID_ACTOR_TYPE\",\n      message: `actor_type deve ser um dos seguintes: ${validActors.join(', ')}`,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nif (!action || typeof action !== 'string' || action.trim().length === 0) {\n  return [{\n    json: {\n      is_valid: false,\n      status: \"validation_error\",\n      code: \"INVALID_ACTION\",\n      message: \"O parâmetro 'action' é obrigatório (ex: 'user.login', 'test.executed')\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    tenant_id: tenantId ? String(tenantId).trim() : null,\n    actor_type: actorType,\n    actor_id: actorId && uuidRegex.test(String(actorId).trim()) ? String(actorId).trim() : null,\n    action: String(action).trim(),\n    entity_type: entityType ? String(entityType).trim() : null,\n    entity_id: entityId && uuidRegex.test(String(entityId).trim()) ? String(entityId).trim() : null,\n    metadata: JSON.stringify(typeof metadata === 'object' ? metadata : { raw: metadata })\n  }\n}];"
+      },
+      "id": "60000000-0000-0000-0000-000000000002",
+      "name": "Validar Params de Auditoria",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "60000000-0000-0000-0000-000000000003",
+      "name": "Params Válidos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO audit_logs (tenant_id, actor_type, actor_id, action, entity_type, entity_id, metadata) VALUES ($1::uuid, $2::text, $3::uuid, $4::text, $5::text, $6::uuid, $7::jsonb) RETURNING id AS audit_log_id, tenant_id, actor_type, actor_id, action, entity_type, entity_id, metadata, created_at;",
+        "queryParams": "={{ $json.tenant_id }},{{ $json.actor_type }},{{ $json.actor_id }},{{ $json.action }},{{ $json.entity_type }},{{ $json.entity_id }},{{ $json.metadata }}"
+      },
+      "id": "60000000-0000-0000-0000-000000000004",
+      "name": "Inserir Audit Log (PostgreSQL)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [880, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst first = items[0];\n\nif (first.error) {\n  return [{\n    json: {\n      status: \"error\",\n      code: \"DB_INSERT_ERROR\",\n      message: \"Erro ao gravar log de auditoria no PostgreSQL\",\n      error_details: first.error.message || \"Erro desconhecido\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nconst log = first.json;\nreturn [{\n  json: {\n    status: \"success\",\n    code: \"AUDIT_LOG_CREATED\",\n    message: \"Evento de auditoria registrado com sucesso no PostgreSQL\",\n    data: {\n      audit_log_id: log.audit_log_id,\n      tenant_id: log.tenant_id || null,\n      actor_type: log.actor_type,\n      actor_id: log.actor_id || null,\n      action: log.action,\n      entity_type: log.entity_type || null,\n      entity_id: log.entity_id || null,\n      metadata: log.metadata,\n      created_at: log.created_at\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "60000000-0000-0000-0000-000000000005",
+      "name": "Formatar Resposta Audit Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    }
+  ],
+  "connections": {
+    "Ao Clicar em Executar": {
+      "main": [
+        [
+          {
+            "node": "Validar Params de Auditoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Params de Auditoria": {
+      "main": [
+        [
+          {
+            "node": "Params Válidos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Params Válidos?": {
+      "main": [
+        [
+          {
+            "node": "Inserir Audit Log (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Inserir Audit Log (PostgreSQL)": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resposta Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "sdtech-core-audit-test",
+    "version": "1.0.0",
+    "description": "Grava log de auditoria parametrizado no PostgreSQL"
+  }
+}
