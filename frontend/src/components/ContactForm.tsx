@@ -14,19 +14,52 @@ export const ContactForm: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const formatWhatsApp = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length === 0) return '';
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    if (name === 'whatsapp') {
+      setFormData({
+        ...formData,
+        whatsapp: formatWhatsApp(value)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome || !formData.email || !formData.whatsapp) {
-      setErrorMsg('Por favor, preencha os campos obrigatórios (Nome, E-mail e WhatsApp).');
+      setErrorMsg('Por favor, preencha todos os campos obrigatórios (Nome, E-mail e WhatsApp).');
       return;
     }
+
+    if (!isValidEmail(formData.email)) {
+      setErrorMsg('Por favor, informe um endereço de e-mail válido (ex: seuemail@empresa.com).');
+      return;
+    }
+
+    const rawWhatsapp = formData.whatsapp.replace(/\D/g, '');
+    if (rawWhatsapp.length < 10) {
+      setErrorMsg('Por favor, informe um número de WhatsApp válido com DDD no formato (00) 00000-0000.');
+      return;
+    }
+
     setErrorMsg('');
 
     const subject = encodeURIComponent(`[Contato Landing Page] ${formData.interesse} - ${formData.nome}`);
@@ -147,6 +180,7 @@ export const ContactForm: React.FC = () => {
                       value={formData.whatsapp}
                       onChange={handleChange}
                       placeholder="(11) 99999-9999"
+                      maxLength={15}
                       className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
                       required
                     />
