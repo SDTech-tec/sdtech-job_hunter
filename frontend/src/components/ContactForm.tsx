@@ -7,7 +7,7 @@ export const ContactForm: React.FC = () => {
     empresa: '',
     email: '',
     whatsapp: '',
-    interesse: 'Plataforma SaaS',
+    interesse: 'Atendimento Virtual Inteligente',
     mensagem: ''
   });
 
@@ -24,7 +24,7 @@ export const ContactForm: React.FC = () => {
   };
 
   const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -56,7 +56,7 @@ export const ContactForm: React.FC = () => {
 
     const rawWhatsapp = formData.whatsapp.replace(/\D/g, '');
     if (rawWhatsapp.length < 10) {
-      setErrorMsg('Por favor, informe um número de WhatsApp válido com DDD no formato (00) 00000-0000.');
+      setErrorMsg('Por favor, informe um número de WhatsApp válido com DDD no formato (00) 0000-0000.');
       return;
     }
 
@@ -106,7 +106,7 @@ export const ContactForm: React.FC = () => {
                 <button
                   onClick={() => {
                     setSubmitted(false);
-                    setFormData({ nome: '', empresa: '', email: '', whatsapp: '', interesse: 'Plataforma SaaS', mensagem: '' });
+                    setFormData({ nome: '', empresa: '', email: '', whatsapp: '', interesse: 'Atendimento Virtual Inteligente', mensagem: '' });
                   }}
                   className="px-6 py-2.5 rounded-xl bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700"
                 >
@@ -179,7 +179,7 @@ export const ContactForm: React.FC = () => {
                       name="whatsapp"
                       value={formData.whatsapp}
                       onChange={handleChange}
-                      placeholder="(11) 99999-9999"
+                      placeholder="(00) 0000-0000"
                       maxLength={15}
                       className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
                       required
@@ -197,12 +197,8 @@ export const ContactForm: React.FC = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-brand-500"
                   >
-                    <option value="Plataforma SaaS">Plataforma SaaS Modular</option>
-                    <option value="Inteligência Artificial">Inteligência Artificial & Agentes</option>
-                    <option value="Atendimento">Atendimento WhatsApp</option>
-                    <option value="Automação">Automação de Processos</option>
-                    <option value="Integrações">Integrações & Webhooks</option>
-                    <option value="Outros">Outros Recursos</option>
+                    <option value="Atendimento Virtual Inteligente">Atendimento Virtual Inteligente</option>
+                    <option value="Outros">Outros</option>
                   </select>
                 </div>
 
