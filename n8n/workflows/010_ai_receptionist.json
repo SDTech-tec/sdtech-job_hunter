@@ -1,0 +1,453 @@
+{
+  "name": "SDTECH — AI — Receptionist",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sdtech-ai-receptionist",
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000001",
+      "name": "Webhook Receptionist",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [150, 300],
+      "webhookId": "sdtech-ai-receptionist"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// Prevenção de Loop (mensagens enviadas pela própria plataforma / fromMe)\nif (body.fromMe === true || body.direction === 'outbound') {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"OUTBOUND_LOOP_PREVENTED\",\n      status: \"ignored\",\n      message: \"Mensagem de saída ou própria plataforma ignorada pela Recepcionista\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// Validação de campos obrigatórios\nconst tenantId = body.tenant_id;\nconst conversationId = body.conversation_id;\nconst contactId = body.contact_id;\nconst messageText = body.message_text || body.content || '';\nconst intent = body.intent || 'GENERAL';\nconst confidence = typeof body.confidence === 'number' ? body.confidence : 1.0;\nconst action = body.action || 'TRANSFER_TO_AGENT';\nconst channelId = body.channel_id || null;\nconst messageId = body.message_id || null;\n\nif (!tenantId || !conversationId || !contactId) {\n  return [{\n    json: {\n      is_valid: false,\n      reason: \"VALIDATION_ERROR\",\n      status: \"validation_error\",\n      message: \"Campos obrigatórios ausentes: tenant_id, conversation_id e contact_id são requeridos\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    is_valid: true,\n    tenant_id: String(tenantId).trim(),\n    conversation_id: String(conversationId).trim(),\n    contact_id: String(contactId).trim(),\n    channel_id: channelId ? String(channelId).trim() : null,\n    message_id: messageId ? String(messageId).trim() : null,\n    message_text: String(messageText).trim(),\n    intent: String(intent).trim(),\n    confidence: confidence,\n    action: String(action).trim(),\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "10000000-0000-0000-0000-000000000002",
+      "name": "1. Validar Entrada & Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "10000000-0000-0000-0000-000000000003",
+      "name": "Payload Válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS agent_id, name, type, status, configuration FROM agents WHERE (tenant_id = $1::uuid OR tenant_id IS NULL) AND type = 'receptionist' AND status = 'active' ORDER BY tenant_id DESC NULLS LAST LIMIT 1;",
+        "queryParams": "={{ $json.tenant_id }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000004",
+      "name": "2. Resolver Agente (agents)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [820, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst first = items[0];\nconst prev = $('1. Validar Entrada & Loop').first().json;\n\nif (first.error || items.length === 0 || !first.json || !first.json.agent_id) {\n  return [{\n    json: {\n      agent_available: false,\n      reason: \"AGENT_NOT_AVAILABLE\",\n      status: \"agent_not_found\",\n      message: \"Agente 'receptionist' não está ativo ou habilitado para o Tenant\",\n      tenant_id: prev.tenant_id,\n      conversation_id: prev.conversation_id\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    agent_available: true,\n    agent_id: first.json.agent_id,\n    agent_name: first.json.name,\n    agent_type: first.json.type,\n    agent_config: first.json.configuration,\n    ...prev\n  }\n}];"
+      },
+      "id": "10000000-0000-0000-0000-000000000005",
+      "name": "3. Validar Agente Habilitado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.agent_available }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "10000000-0000-0000-0000-000000000006",
+      "name": "Agente Disponível?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1260, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS tenant_id, name AS company_name, status FROM tenants WHERE id = $1::uuid AND status = 'active' LIMIT 1;",
+        "queryParams": "={{ $json.tenant_id }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000007",
+      "name": "4. Carregar Dados do Tenant",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1480, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id AS contact_id, name, phone, metadata FROM contacts WHERE id = $1::uuid AND tenant_id = $2::uuid LIMIT 1;",
+        "queryParams": "={{ $('3. Validar Agente Habilitado').first().json.contact_id }},{{ $('3. Validar Agente Habilitado').first().json.tenant_id }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000008",
+      "name": "5. Carregar Dados do Contact",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1700, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, sender_type, sender_id, message_type, content, created_at FROM messages WHERE conversation_id = $1::uuid AND tenant_id = $2::uuid ORDER BY created_at DESC LIMIT 20;",
+        "queryParams": "={{ $('3. Validar Agente Habilitado').first().json.conversation_id }},{{ $('3. Validar Agente Habilitado').first().json.tenant_id }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000009",
+      "name": "6. Carregar Histórico de Mensagens",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1920, 100],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseContext = $('3. Validar Agente Habilitado').first().json;\nconst tenantData = $('4. Carregar Dados do Tenant').first().json || {};\nconst contactData = $('5. Carregar Dados do Contact').first().json || {};\nconst historyItems = $('6. Carregar Histórico de Mensagens').all().map(i => i.json).reverse();\n\nconst companyName = tenantData.company_name || 'SDTech Soluctions';\nconst contactName = contactData.name || 'Cliente';\nconst messageText = baseContext.message_text || '';\nconst intent = baseContext.intent || 'GENERAL';\nconst confidence = baseContext.confidence;\nconst actionReq = baseContext.action;\n\n// Tratar Handoff Humano direto\nif (actionReq === 'HUMAN_HANDOFF' || messageText.toLowerCase().includes('falar com pessoa') || messageText.toLowerCase().includes('atendente humano')) {\n  return [{\n    json: {\n      llm_response: {\n        success: true,\n        action: \"HUMAN_HANDOFF\",\n        message: {\n          text: \"Claro! Vou encaminhar seu atendimento para a nossa equipe humana. Por favor, aguarde um instante.\"\n        },\n        handoff: true,\n        handoff_reason: \"SOLICITACAO_CLIENTE_OU_SUPERVISOR\"\n      },\n      context: baseContext,\n      company_name: companyName,\n      contact_name: contactName\n    }\n  }];\n}\n\n// Tratar Baixa Confiança ou Intenção Desconhecida\nif (confidence < 0.70 || intent === 'UNKNOWN') {\n  return [{\n    json: {\n      llm_response: {\n        success: true,\n        action: \"ASK_CLARIFICATION\",\n        message: {\n          text: \"Olá! Posso te ajudar. Você gostaria de informações sobre nossos serviços, atendimento ou agendamento?\"\n        },\n        handoff: false,\n        handoff_reason: null\n      },\n      context: baseContext,\n      company_name: companyName,\n      contact_name: contactName\n    }\n  }];\n}\n\n// Regra de Não Invenção: Preço / Horário / Disponibilidade não configurados no contexto\nconst lowerMsg = messageText.toLowerCase();\nif (lowerMsg.includes('preço') || lowerMsg.includes('valor') || lowerMsg.includes('quanto custa') || lowerMsg.includes('horário') || lowerMsg.includes('agenda')) {\n  return [{\n    json: {\n      llm_response: {\n        success: true,\n        action: \"HUMAN_HANDOFF\",\n        message: {\n          text: \"No momento não possuo a informação de preços/horários em meu cadastro. Vou encaminhar sua dúvida para nosso atendimento humano para que possa te passar todos os detalhes com precisão!\"\n        },\n        handoff: true,\n        handoff_reason: \"INFORMACAO_NAO_DISPONIVEL_NO_TENANT\"\n      },\n      context: baseContext,\n      company_name: companyName,\n      contact_name: contactName\n    }\n  }];\n}\n\n// Intent: Saudação (GREETING)\nif (intent === 'GREETING' || lowerMsg === 'oi' || lowerMsg === 'olá' || lowerMsg === 'bom dia' || lowerMsg === 'boa tarde') {\n  return [{\n    json: {\n      llm_response: {\n        success: true,\n        action: \"RESPOND\",\n        message: {\n          text: `Olá, ${contactName}! Seja bem-vindo(a) à ${companyName}. Como posso ajudar você hoje?`\n        },\n        handoff: false,\n        handoff_reason: null\n      },\n      context: baseContext,\n      company_name: companyName,\n      contact_name: contactName\n    }\n  }];\n}\n\n// Intent: Agendamento Inicial (SCHEDULING)\nif (intent === 'SCHEDULING' || lowerMsg.includes('marcar') || lowerMsg.includes('agendar')) {\n  return [{\n    json: {\n      llm_response: {\n        success: true,\n        action: \"RESPOND\",\n        message: {\n          text: `Perfeito! Para darmos início ao seu atendimento de agendamento na ${companyName}, por favor informe o seu nome completo e qual o serviço de seu interesse.`\n        },\n        handoff: false,\n        handoff_reason: null\n      },\n      context: baseContext,\n      company_name: companyName,\n      contact_name: contactName\n    }\n  }];\n}\n\n// Resposta Conversacional Padrão\nreturn [{\n  json: {\n    llm_response: {\n      success: true,\n      action: \"RESPOND\",\n      message: {\n        text: `Entendido, ${contactName}! Como posso ajudar você em relação a essa solicitação?`\n      },\n      handoff: false,\n      handoff_reason: null\n    },\n    context: baseContext,\n    company_name: companyName,\n    contact_name: contactName\n  }\n}];"
+      },
+      "id": "10000000-0000-0000-0000-000000000010",
+      "name": "7. Processar Resposta Recepcionista",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2140, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst resp = input.llm_response;\n\nif (!resp || resp.success !== true || !resp.action || !resp.message || typeof resp.message.text !== 'string' || resp.message.text.trim() === '') {\n  return [{\n    json: {\n      is_valid_output: false,\n      reason: \"RECEPTIONIST_OUTPUT_INVALID\",\n      status: \"invalid_output\",\n      message: \"Resposta gerada pela Recepcionista é inválida ou malformada\",\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    is_valid_output: true,\n    llm_response: resp,\n    context: input.context,\n    company_name: input.company_name,\n    contact_name: input.contact_name\n  }\n}];"
+      },
+      "id": "10000000-0000-0000-0000-000000000011",
+      "name": "8. Validar Resposta Estrita",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2360, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_valid_output }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "10000000-0000-0000-0000-000000000012",
+      "name": "Resposta Válida?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2580, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO agent_sessions (tenant_id, conversation_id, agent_id, status, metadata) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::jsonb) RETURNING id AS session_id;",
+        "queryParams": "={{ $json.context.tenant_id }},{{ $json.context.conversation_id }},{{ $json.context.agent_id }},{{ $json.llm_response.handoff ? 'transferred' : 'active' }},{{ JSON.stringify({ action: $json.llm_response.action, handoff_reason: $json.llm_response.handoff_reason, intent: $json.context.intent }) }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000013",
+      "name": "9. Persistir Agent Session",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2800, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (tenant_id, conversation_id, sender_type, sender_id, message_type, content, metadata) VALUES ($1::uuid, $2::uuid, 'agent', $3::uuid, 'text', $4::text, $5::jsonb) RETURNING id AS inserted_message_id;",
+        "queryParams": "={{ $('8. Validar Resposta Estrita').first().json.context.tenant_id }},{{ $('8. Validar Resposta Estrita').first().json.context.conversation_id }},{{ $('8. Validar Resposta Estrita').first().json.context.agent_id }},{{ $('8. Validar Resposta Estrita').first().json.llm_response.message.text }},{{ JSON.stringify({ agent_type: 'RECEPTIONIST', action: $('8. Validar Resposta Estrita').first().json.llm_response.action, handoff: $('8. Validar Resposta Estrita').first().json.llm_response.handoff }) }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000014",
+      "name": "10. Persistir Assistant Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [3020, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE conversations SET assigned_agent_id = $1::uuid, last_message_at = now() WHERE id = $2::uuid AND tenant_id = $3::uuid; INSERT INTO audit_logs (tenant_id, actor_type, actor_id, action, entity_type, entity_id, metadata) VALUES ($3::uuid, 'agent', $1::uuid, $4::text, 'conversations', $2::uuid, $5::jsonb);",
+        "queryParams": "={{ $('8. Validar Resposta Estrita').first().json.context.agent_id }},{{ $('8. Validar Resposta Estrita').first().json.context.conversation_id }},{{ $('8. Validar Resposta Estrita').first().json.context.tenant_id }},{{ $('8. Validar Resposta Estrita').first().json.llm_response.handoff ? 'RECEPTIONIST_HANDOFF' : 'RECEPTIONIST_RESPONSE_GENERATED' }},{{ JSON.stringify({ action: $('8. Validar Resposta Estrita').first().json.llm_response.action, message_id: $json.inserted_message_id }) }}"
+      },
+      "id": "10000000-0000-0000-0000-000000000015",
+      "name": "11. Update Conversation & Audit Log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [3240, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SDTECH_POSTGRES",
+          "name": "SDTECH_POSTGRES"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseData = $('8. Validar Resposta Estrita').first().json;\nconst insertedMessageId = $('10. Persistir Assistant Message').first().json.inserted_message_id;\n\nreturn [{\n  json: {\n    success: true,\n    status: \"processed\",\n    code: \"RECEPTIONIST_RESPONSE_GENERATED\",\n    action: baseData.llm_response.action,\n    handoff: baseData.llm_response.handoff,\n    handoff_reason: baseData.llm_response.handoff_reason,\n    tenant_id: baseData.context.tenant_id,\n    conversation_id: baseData.context.conversation_id,\n    agent_id: baseData.context.agent_id,\n    message_id: insertedMessageId,\n    response_text: baseData.llm_response.message.text,\n    delivery_mode: \"OUTBOX\",\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "10000000-0000-0000-0000-000000000016",
+      "name": "12. Preparar Resposta Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3460, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "10000000-0000-0000-0000-000000000017",
+      "name": "13. Responder HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3680, 200]
+    }
+  ],
+  "connections": {
+    "Webhook Receptionist": {
+      "main": [
+        [
+          {
+            "node": "1. Validar Entrada & Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validar Entrada & Loop": {
+      "main": [
+        [
+          {
+            "node": "Payload Válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Válido?": {
+      "main": [
+        [
+          {
+            "node": "2. Resolver Agente (agents)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "2. Resolver Agente (agents)": {
+      "main": [
+        [
+          {
+            "node": "3. Validar Agente Habilitado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Validar Agente Habilitado": {
+      "main": [
+        [
+          {
+            "node": "Agente Disponível?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Disponível?": {
+      "main": [
+        [
+          {
+            "node": "4. Carregar Dados do Tenant",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "4. Carregar Dados do Tenant": {
+      "main": [
+        [
+          {
+            "node": "5. Carregar Dados do Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Carregar Dados do Contact": {
+      "main": [
+        [
+          {
+            "node": "6. Carregar Histórico de Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Carregar Histórico de Mensagens": {
+      "main": [
+        [
+          {
+            "node": "7. Processar Resposta Recepcionista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Processar Resposta Recepcionista": {
+      "main": [
+        [
+          {
+            "node": "8. Validar Resposta Estrita",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Validar Resposta Estrita": {
+      "main": [
+        [
+          {
+            "node": "Resposta Válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta Válida?": {
+      "main": [
+        [
+          {
+            "node": "9. Persistir Agent Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "9. Persistir Agent Session": {
+      "main": [
+        [
+          {
+            "node": "10. Persistir Assistant Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Persistir Assistant Message": {
+      "main": [
+        [
+          {
+            "node": "11. Update Conversation & Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Update Conversation & Audit Log": {
+      "main": [
+        [
+          {
+            "node": "12. Preparar Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. Preparar Resposta Final": {
+      "main": [
+        [
+          {
+            "node": "13. Responder HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "sdtech-ai-receptionist-v1",
+    "version": "1.0.0",
+    "description": "Workflow da Recepcionista IA V1.0 para primeiro atendimento, saudação, não invenção, handoff e resposta estruturada"
+  }
+}
