@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'SDTech Soluctions',
+        name: 'SDTech Solutions',
         short_name: 'SDTech',
         start_url: '/',
         display: 'standalone',

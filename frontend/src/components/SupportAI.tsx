@@ -31,7 +31,7 @@ export const SupportAI: React.FC = () => {
 
           <div className="pt-6 space-y-4">
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Um agente interno planejado para apoiar usuários da plataforma, auxiliar no onboarding, responder dúvidas e contribuir para a evolução da documentação e da base de conhecimento do <strong>SDTech Soluctions</strong>.
+              Um agente interno planejado para apoiar usuários da plataforma, auxiliar no onboarding, responder dúvidas e contribuir para a evolução da documentação e da base de conhecimento do <strong>SDTech Solutions</strong>.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">

@@ -1,4 +1,5 @@
 @tailwind base;
+@import './design-tokens.css';
 @tailwind components;
 @tailwind utilities;
 

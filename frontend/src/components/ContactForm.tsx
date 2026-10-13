@@ -64,7 +64,7 @@ export const ContactForm: React.FC = () => {
 
     const subject = encodeURIComponent(`[Contato Landing Page] ${formData.interesse} - ${formData.nome}`);
     const body = encodeURIComponent(
-      `Novo contato recebido via Landing Page SDTech Soluctions:\n\n` +
+      `Novo contato recebido via Landing Page SDTech Solutions:\n\n` +
       `Nome: ${formData.nome}\n` +
       `Empresa: ${formData.empresa || 'Não informada'}\n` +
       `E-mail: ${formData.email}\n` +
@@ -92,7 +92,7 @@ export const ContactForm: React.FC = () => {
                 Fale com a SDTECH
               </h2>
               <p className="text-sm text-slate-300">
-                Preencha o formulário e nossa equipe entrará em contato para apresentar as possibilidades do SDTech Soluctions.
+                Preencha o formulário e nossa equipe entrará em contato para apresentar as possibilidades do SDTech Solutions.
               </p>
             </div>
 
@@ -101,7 +101,7 @@ export const ContactForm: React.FC = () => {
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
                 <h3 className="text-2xl font-bold text-white">Mensagem Enviada!</h3>
                 <p className="text-sm text-slate-300 max-w-md mx-auto">
-                  Obrigado pelo interesse no <strong>SDTech Soluctions</strong>. Nossa equipe entrará em contato em breve através do WhatsApp/E-mail fornecido.
+                  Obrigado pelo interesse no <strong>SDTech Solutions</strong>. Nossa equipe entrará em contato em breve através do WhatsApp/E-mail fornecido.
                 </p>
                 <button
                   onClick={() => {

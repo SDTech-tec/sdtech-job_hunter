@@ -81,7 +81,7 @@ export const AboutSDTech: React.FC = () => {
                 <div className="glass-card p-4 rounded-xl flex items-center justify-between border border-brand-500/30 bg-brand-500/5">
                   <div className="flex items-center gap-3">
                     <Target className="w-5 h-5 text-brand-400" />
-                    <span className="text-sm font-bold text-white">1. SDTech Soluctions</span>
+                    <span className="text-sm font-bold text-white">1. SDTech Solutions</span>
                   </div>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-brand-500/20 text-brand-300">Plataforma Principal</span>
                 </div>
@@ -96,7 +96,7 @@ export const AboutSDTech: React.FC = () => {
               </div>
 
               <div className="pt-2 text-xs text-slate-400 text-center italic border-t border-slate-800">
-                "Estrutura oficial focada na excelência contínua do SDTech Soluctions."
+                "Estrutura oficial focada na excelência contínua do SDTech Solutions."
               </div>
             </div>
           </div>

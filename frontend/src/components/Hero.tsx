@@ -12,20 +12,20 @@ export const Hero: React.FC = () => {
         <div className="text-center max-w-4xl mx-auto space-y-6">
           
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border border-brand-500/30 text-brand-300 text-xs font-semibold uppercase tracking-wider shadow-inner">
-            <Sparkles className="w-4 h-4 text-brand-400 animate-pulse" />
-            <span>Uma plataforma. Diversas possibilidades.</span>
-          </div>
+  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border border-brand-500/30 text-brand-300 text-xs font-semibold uppercase tracking-wider shadow-inner">
+    <Sparkles className="w-4 h-4 text-brand-400 animate-pulse" />
+    <span>Sua empresa trabalha. O PP atende.</span>
+  </div>
 
           {/* Title */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1]">
-            Inteligência, automação e tecnologia em{' '}
-            <span className="gradient-text">uma única plataforma.</span>
+            Tecnologia prática e eficiente para sua empresa.
+            <span className="gradient-text">SDTech Solutions.</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
-            <strong className="text-white font-semibold">SDTech Soluctions</strong> é a plataforma SaaS modular da{' '}
+            <strong className="text-white font-semibold">SDTech Solutions</strong> é a plataforma SaaS modular da{' '}
             <span className="text-brand-400 font-semibold">SDTECH</span> criada para transformar processos, atendimento e operações por meio de automação, inteligência artificial e integrações.
           </p>
 
@@ -35,7 +35,7 @@ export const Hero: React.FC = () => {
               href="#soluctions"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-brand-600/30 hover:shadow-brand-500/50 transition-all hover:-translate-y-0.5"
             >
-              Conheça o SDTech Soluctions
+              Conheça o SDTech Solutions
               <ArrowRight className="w-5 h-5" />
             </a>
 

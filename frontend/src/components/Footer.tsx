@@ -23,17 +23,17 @@ export const Footer: React.FC = () => {
           {/* Links */}
           <div className="flex flex-wrap items-center gap-6 text-xs font-medium">
             <a href="#empresa" className="hover:text-brand-400 transition-colors">Empresa</a>
-            <a href="#soluctions" className="hover:text-brand-400 transition-colors">SDTech Soluctions</a>
+            <a href="#solutions" className="hover:text-brand-400 transition-colors">SDTech Solutions</a>
             <a href="#contato" className="hover:text-brand-400 transition-colors">Contato</a>
-            <a href="#privacidade" onClick={(e) => { e.preventDefault(); alert("Política de Privacidade do SDTech Soluctions"); }} className="hover:text-brand-400 transition-colors">Política de Privacidade</a>
-            <a href="#termos" onClick={(e) => { e.preventDefault(); alert("Termos de Uso do SDTech Soluctions"); }} className="hover:text-brand-400 transition-colors">Termos de Uso</a>
+            <a href="#privacidade" onClick={(e) => { e.preventDefault(); alert("Política de Privacidade do SDTech Solutions"); }} className="hover:text-brand-400 transition-colors">Política de Privacidade</a>
+            <a href="#termos" onClick={(e) => { e.preventDefault(); alert("Termos de Uso do SDTech Solutions"); }} className="hover:text-brand-400 transition-colors">Termos de Uso</a>
           </div>
 
         </div>
 
         <div className="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
           <span>© {new Date().getFullYear()} SDTECH — Todos os direitos reservados.</span>
-          <span>SDTech Soluctions • Plataforma SaaS Modular</span>
+          <span>SDTech Solutions • Plataforma SaaS Modular</span>
         </div>
 
       </div>

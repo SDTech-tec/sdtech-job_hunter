@@ -46,7 +46,7 @@ export const ProductOverview: React.FC = () => {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            Conheça o <span className="gradient-text">SDTech Soluctions</span>
+            Conheça o <span className="gradient-text">SDTech Solutions</span>
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300 leading-relaxed">

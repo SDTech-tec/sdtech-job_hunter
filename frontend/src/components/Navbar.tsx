@@ -15,7 +15,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { name: 'Empresa', href: '#empresa' },
-    { name: 'Soluctions', href: '#soluctions' },
+    { name: 'Solutions', href: '#soluctions' },
     { name: 'Recursos', href: '#recursos' },
     { name: 'IA', href: '#ia' },
     { name: 'Integrações', href: '#integracoes' },
@@ -37,7 +37,7 @@ export const Navbar: React.FC = () => {
                 SDTECH
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-medium">SaaS</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Soluctions</span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Solutions</span>
             </div>
           </a>
 

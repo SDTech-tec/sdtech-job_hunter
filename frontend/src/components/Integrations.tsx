@@ -15,7 +15,7 @@ export const Integrations: React.FC = () => {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-              Conecte o SDTech Soluctions ao seu ecossistema.
+              Conecte o SDTech Solutions ao seu ecossistema.
             </h2>
 
             <p className="text-base sm:text-lg text-slate-300 leading-relaxed">

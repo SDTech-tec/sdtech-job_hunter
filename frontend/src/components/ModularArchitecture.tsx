@@ -8,7 +8,7 @@ export const ModularArchitecture: React.FC = () => {
       icon: <Building2 className="w-6 h-6 text-brand-400" />,
       title: 'Empresa',
       subtitle: 'Sua Organização',
-      desc: 'Sua empresa cadastra a operação no SDTech Soluctions.'
+      desc: 'Sua empresa cadastra a operação no SDTech Solutions.'
     },
     {
       num: '02',

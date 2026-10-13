@@ -15,7 +15,7 @@ export const CTA: React.FC = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Converse com a SDTECH e descubra como o <strong>SDTech Soluctions</strong> pode se adaptar às necessidades da sua empresa.
+            Converse com a SDTECH e descubra como o <strong>SDTech Solutions</strong> pode se adaptar às necessidades da sua empresa.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">

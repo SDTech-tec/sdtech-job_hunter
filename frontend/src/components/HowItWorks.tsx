@@ -7,7 +7,7 @@ export const HowItWorks: React.FC = () => {
       num: '01',
       icon: <Compass className="w-6 h-6 text-brand-400" />,
       title: 'Conheça',
-      desc: 'Explore as capacidades do SDTech Soluctions e converse com a equipe SDTECH.'
+      desc: 'Explore as capacidades do SDTech Solutions e converse com a equipe SDTECH.',
     },
     {
       num: '02',

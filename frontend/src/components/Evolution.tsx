@@ -17,7 +17,7 @@ export const Evolution: React.FC = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300">
-            O SDTech Soluctions foi concebido para crescer através de módulos. Novos recursos são incorporados como extensões do Core, permitindo que cada empresa utilize somente aquilo que contratou.
+            O SDTech Solutions foi concebido para crescer através de módulos. Novos recursos são incorporados como extensões do Core, permitindo que cada empresa utilize somente aquilo que contratou.
           </p>
         </div>
 

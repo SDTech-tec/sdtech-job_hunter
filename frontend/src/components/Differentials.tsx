@@ -46,7 +46,7 @@ export const Differentials: React.FC = () => {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            Por que escolher o SDTech Soluctions?
+            Por que escolher o SDTech Solutions?
           </h2>
         </div>
 
